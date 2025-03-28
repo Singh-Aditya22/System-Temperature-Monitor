@@ -1,0 +1,27 @@
+#!/bin/bash
+
+echo "===================================="
+echo "📊 System Temperature Monitor"
+echo "===================================="
+
+# CPU Temperature
+echo -e "\n🌡️  CPU Temperature:"
+sensors | grep -E 'Package id 0|Core [0-9]:' | awk '{print $1, $2, $3}'
+
+# PCH (Chipset) Temperature
+echo -e "\n🔧 PCH (Chipset) Temperature:"
+sensors | grep 'pch_cometlake-virtual-0' -A 1 | tail -n 1 | awk '{print $1, $2, $3}'
+
+# NVMe SSD Temperature
+echo -e "\n💾 NVMe SSD Temperature:"
+sensors | grep 'Composite' | awk '{print $1, $2, $3}'
+
+# Wi-Fi Module Temperature
+echo -e "\n📡 Wi-Fi Module Temperature:"
+sensors | grep 'iwlwifi' -A 1 | tail -n 1 | awk '{print $1, $2, $3}'
+
+# GPU Temperature (NVIDIA)
+echo -e "\n🎮 GPU Temperature (NVIDIA GeForce RTX 2060):"
+nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader | awk '{print "GPU Temp: " $1 "°C"}'
+
+echo "===================================="
