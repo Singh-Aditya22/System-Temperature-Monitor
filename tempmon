@@ -1,27 +1,65 @@
 #!/bin/bash
 
+# Define color codes
+RED='\033[1;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+WHITE='\033[1;37m'
+RESET='\033[0m'  # Reset color
+
+# Function to classify and color temperature levels
+classify_temp() {
+    temp=$1
+    low=$2
+    high=$3
+
+    # Handle missing values
+    if [[ "$temp" == "Not Available" ]]; then
+        echo -e "${WHITE}Not Available${RESET}"
+        return
+    fi
+
+    # Convert temp to float
+    if [[ $(echo "$temp < $low" | bc -l) -eq 1 ]]; then
+        echo -e "${BLUE}LOW${RESET}"
+    elif [[ $(echo "$temp >= $low && $temp <= $high" | bc -l) -eq 1 ]]; then
+        echo -e "${YELLOW}MEDIUM${RESET}"
+    else
+        echo -e "${RED}HIGH${RESET}"
+    fi
+}
+
+# Extract CPU temperature (Fixing extra characters issue)
+cpu_temp=$(sensors | grep 'Package id 0' | awk '{print $4}' | tr -d '+°C')
+
+# Extract NVMe SSD temperature
+nvme_temp=$(sensors | grep 'Composite' | awk '{print $2}' | tr -d '+°C')
+
+# Extract GPU temperature
+gpu_temp=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader)
+
+# Extract PCH temperature safely
+pch_temp=$(sensors | grep -A 1 'pch_cometlake-virtual-0' | grep 'temp1' | awk '{print $2}' | tr -d '+°C')
+pch_temp=${pch_temp:-"Not Available"}
+
+# Extract Wi-Fi temperature safely
+wifi_temp=$(sensors | grep -A 1 'iwlwifi' | grep 'temp1' | awk '{print $2}' | tr -d '+°C')
+wifi_temp=${wifi_temp:-"Not Available"}
+
+# Classify temperatures with colors
+cpu_status=$(classify_temp "$cpu_temp" 60 85)
+nvme_status=$(classify_temp "$nvme_temp" 60 80)
+gpu_status=$(classify_temp "$gpu_temp" 75 90)
+pch_status=$(classify_temp "$pch_temp" 70 90)
+wifi_status=$(classify_temp "$wifi_temp" 60 85)
+
+# Print output in Linux-style format with colors
 echo "===================================="
-echo "📊 System Temperature Monitor"
+echo "📊 SYSTEM TEMPERATURE MONITOR"
 echo "===================================="
-
-# CPU Temperature
-echo -e "\n🌡️  CPU Temperature:"
-sensors | grep -E 'Package id 0|Core [0-9]:' | awk '{print $1, $2, $3}'
-
-# PCH (Chipset) Temperature
-echo -e "\n🔧 PCH (Chipset) Temperature:"
-sensors | grep 'pch_cometlake-virtual-0' -A 1 | tail -n 1 | awk '{print $1, $2, $3}'
-
-# NVMe SSD Temperature
-echo -e "\n💾 NVMe SSD Temperature:"
-sensors | grep 'Composite' | awk '{print $1, $2, $3}'
-
-# Wi-Fi Module Temperature
-echo -e "\n📡 Wi-Fi Module Temperature:"
-sensors | grep 'iwlwifi' -A 1 | tail -n 1 | awk '{print $1, $2, $3}'
-
-# GPU Temperature (NVIDIA)
-echo -e "\n🎮 GPU Temperature (NVIDIA GeForce RTX 2060):"
-nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader | awk '{print "GPU Temp: " $1 "°C"}'
-
+echo -e "🔹 CPU Temperature: $cpu_temp°C ($cpu_status)  (Safe: <60°C, High: >85°C)"
+echo -e "🔹 PCH Temperature: $pch_temp°C ($pch_status)  (Safe: <70°C, High: >90°C)"
+echo -e "🔹 NVMe SSD Temperature: $nvme_temp°C ($nvme_status)  (Safe: <60°C, High: >80°C)"
+echo -e "🔹 Wi-Fi Module Temperature: $wifi_temp°C ($wifi_status)  (Safe: <60°C, High: >85°C)"
+echo -e "🔹 GPU Temperature: $gpu_temp°C ($gpu_status)  (Safe: <75°C, High: >90°C)"
 echo "===================================="
