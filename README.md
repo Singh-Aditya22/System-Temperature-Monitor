@@ -15,7 +15,7 @@ Script to monitor system temperature for Acer laptops in ubuntu
 
 3️ **Move it to `/usr/local/bin/`** (to run as `tempmon` from anywhere):  
    ```bash
-   sudo mv /home/<dir>tempmon.sh /usr/local/bin/tempmon
+   sudo mv /home/<dir>/tempmon.sh /usr/local/bin/tempmon
    ```
 
 4️ **Ensure execution permission**:  
